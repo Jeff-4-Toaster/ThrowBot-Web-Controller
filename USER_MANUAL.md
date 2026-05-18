@@ -30,13 +30,20 @@
 
 ```cpp
 #include <WiFi.h>
+#include <WebServer.h>
 #include <WebSocketsServer.h>
 #include <ArduinoJson.h>
+
+// 匯入自動產生的網頁介面標頭檔
+#include "WebUI.h" 
 
 const char *ssid = "ThrowBot_Wifi";
 const char *password = "12345678"; 
 
-WebSocketsServer webSocket = WebSocketsServer(80);
+// 設定 HTTP 伺服器在 Port 80
+WebServer server(80);
+// 設定 WebSocket 伺服器在 Port 81
+WebSocketsServer webSocket = WebSocketsServer(81);
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   if (type == WStype_TEXT) {
@@ -47,17 +54,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       int x = doc["x"];
       int y = doc["y"];
       
-      // 在此實作差速控制 (Differential Drive)
-      int left_motor_speed = y + x;
-      int right_motor_speed = y - x;
-      
-      // 將速度限制在 -100 到 100 之間
-      left_motor_speed = constrain(left_motor_speed, -100, 100);
-      right_motor_speed = constrain(right_motor_speed, -100, 100);
-      
-      Serial.printf("X: %d, Y: %d | Left: %d, Right: %d\n", x, y, left_motor_speed, right_motor_speed);
-      
-      // TODO: 輸出 PWM 到 L298N 或 TB6612 馬達驅動板
+      // TODO: 差速控制 (Differential Drive) 運算放在這裡
+      Serial.printf("X: %d, Y: %d\n", x, y);
     }
   }
 }
@@ -70,17 +68,33 @@ void setup() {
   Serial.print("AP IP address: ");
   Serial.println(WiFi.softAPIP());
   
+  // 設定 HTTP 網頁路由
+  server.on("/", HTTP_GET, []() {
+    server.send(200, "text/html", index_html);
+  });
+  server.on("/style.css", HTTP_GET, []() {
+    server.send(200, "text/css", style_css);
+  });
+  server.on("/main.js", HTTP_GET, []() {
+    server.send(200, "application/javascript", main_js);
+  });
+  
+  server.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
+  server.handleClient();
   webSocket.loop();
 }
 ```
 
-## 4. 如何部署這個控制網頁？
-您有三個選項可以讓手機顯示這個控制介面：
-1. **開發測試期**：在電腦端使用 `python3 -m http.server 8080` 開啟，手機與電腦連同一個 Wi-Fi，手機瀏覽器輸入 `http://電腦IP:8080`。
-2. **免安裝 APP (離線檔案)**：將 `index.html`、`style.css`、`main.js` 傳到手機裡，直接用手機瀏覽器開啟本機檔案。
-3. **最專業作法 (燒入 ESP32)**：使用 `SPIFFS` 或 `LittleFS` 技術，把這三個檔案直接燒錄進 ESP32 內部記憶體。並搭配 `ESPAsyncWebServer` 庫，當手機連上 ESP32 的 Wi-Fi 時，直接打開 `http://192.168.4.1` 就能載入介面！
+## 4. 如何將網頁燒錄進 ESP32？(免裝外掛版)
+業界有很多方式可以把網頁放進 ESP32 (例如 SPIFFS 或 LittleFS)。但為了減少 Arduino IDE 的外掛安裝麻煩，我推薦使用 **「C++ 標頭檔 (Header File)」** 法。
+
+1. 我寫了一支 Python 腳本 `pack_to_header.py`。
+2. 請在您的電腦上執行這支腳本： `python pack_to_header.py`。
+3. 它會自動把 `index.html`, `style.css`, `main.js` 這三個檔案，轉碼成一個叫做 `WebUI.h` 的 C++ 檔案！
+4. 您只需要把這個 `WebUI.h` 放到您的 Arduino 專案資料夾裡面。
+5. 照著上面的程式碼寫 `#include "WebUI.h"`，然後一鍵燒錄，網頁介面就會順利被包進您的車子裡了！
