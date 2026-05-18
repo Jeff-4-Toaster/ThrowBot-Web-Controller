@@ -1,2 +1,29 @@
-# ThrowBot-Web-Controller
-Web-based Control Interface for ESP32-S3 Two-Wheeled Robot
+# ThrowBot S-3 Web Controller
+
+這是一個專為 ESP32-S3 雙輪機器車設計的現代化 Web 控制介面。本專案透過 WebSocket 進行極低延遲的馬達控制，並支援透過 HTTP 接收 MJPEG 影像串流。
+
+## 專案進度與功能 (目前成果)
+
+### 🚀 已完成功能 (v1.0)
+1. **雙畫面架構 (Two-Screen Design)**：
+   - **連線設定頁面**：啟動時顯示乾淨的設定卡片，供使用者輸入 WebSocket 與 Video Stream 的 IP 位置。
+   - **駕駛模式頁面**：連線成功後自動切換至無干擾的駕駛介面，確保操作專注度。
+2. **多點觸控虛擬搖桿 (Virtual Joystick)**：
+   - 採用 `nipple.js` 實作，自動計算推動距離與角度。
+   - 將極座標轉換為 `(X, Y)` 座標（範圍 `-100` 到 `100`），完美對應差速驅動控制。
+3. **低延遲通訊與防塞車機制 (Throttling & E-Brake)**：
+   - 設定為 `20Hz` (50ms) 發送頻率，避免封包擁塞導致 ESP32 當機。
+   - **強制回彈歸零 (Bypass Throttle)**：當放開搖桿的瞬間，會無視冷卻時間強制發送 `(0, 0)`，確保安全急煞。
+4. **影像串流整合**：
+   - 原生支援 ESP32 `CameraWebServer` 的 MJPEG 影像顯示，無需複雜解碼。
+5. **RWD 響應式與現代感設計 (UI/UX)**：
+   - 科技感深色模式 (Dark Theme)、毛玻璃特效。
+   - 針對手機直式 (Portrait) 與橫式 (Landscape) 皆有對應排版。
+
+### 🔧 待開發/未來規劃
+- [ ] 車體電量顯示 (需 ESP32 傳回數據)
+- [ ] 影像截圖與錄影功能
+- [ ] 陀螺儀 (IMU) 姿態顯示
+
+## 開發者 (硬體組員) 須知
+請參考 [USER_MANUAL.md](./USER_MANUAL.md) 了解如何將此專案與 ESP32 進行對接，以及 ESP32 端的 C++ 實作範例。

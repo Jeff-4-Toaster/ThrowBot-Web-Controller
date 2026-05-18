@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ThrowBot Control Panel</title>
+    <link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      
+      <!-- Top Status Bar -->
+      <div class="status-bar">
+        <div class="brand">
+          <span class="logo">TB</span>
+          <span class="title">THROWBOT S-3</span>
+        </div>
+        <div class="connection-status">
+          <div class="status-dot disconnected" id="status-indicator"></div>
+          <span id="status-text" id="btn-disconnect" style="cursor:pointer;">Disconnected</span>
+        </div>
+      </div>
+
+      <!-- SETUP SCREEN -->
+      <div id="setup-screen" class="setup-screen">
+        <div class="setup-card">
+          <h2>SYSTEM SETUP</h2>
+          <div class="input-group">
+            <label for="ws-url">ESP32 WebSocket URL</label>
+            <input type="text" id="ws-url" value="ws://192.168.4.1/ws" />
+          </div>
+          <div class="input-group">
+            <label for="video-url">Video Stream URL</label>
+            <input type="text" id="video-url" value="http://192.168.4.1:81/stream" />
+          </div>
+          <button id="btn-connect" class="btn primary-btn" style="margin-top: 15px;">START CONNECTION</button>
+        </div>
+      </div>
+
+      <!-- DRIVE SCREEN -->
+      <div id="drive-screen" class="drive-screen" style="display: none;">
+        
+        <!-- Video Feed Section -->
+        <div class="video-container">
+          <div class="video-placeholder">
+            <span class="video-icon">📷</span>
+            <p>Waiting for video stream...</p>
+          </div>
+          <img id="video-stream" src="" alt="Live Video Feed" style="display: none;" />
+          
+          <div class="telemetry-overlay">
+            <div class="telemetry-item"><span class="label">X</span><span class="value" id="val-x">0</span></div>
+            <div class="telemetry-item"><span class="label">Y</span><span class="value" id="val-y">0</span></div>
+            <div class="telemetry-item"><span class="label">RATE</span><span class="value" id="val-rate">0 Hz</span></div>
+          </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="controls-container">
+          <!-- Action Bar -->
+          <div class="action-bar">
+            <button id="btn-estop" class="btn estop-btn">
+              <span class="icon">🛑</span> EMERGENCY STOP
+            </button>
+          </div>
+          
+          <!-- Virtual Joystick Area -->
+          <div class="joystick-wrapper">
+            <div id="joystick-zone"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
