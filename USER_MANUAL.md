@@ -78,6 +78,9 @@ void setup() {
   server.on("/main.js", HTTP_GET, []() {
     server.send(200, "application/javascript", main_js);
   });
+  server.on("/nipplejs.min.js", HTTP_GET, []() {
+    server.send(200, "application/javascript", nipplejs_min_js);
+  });
   
   server.begin();
   webSocket.begin();
