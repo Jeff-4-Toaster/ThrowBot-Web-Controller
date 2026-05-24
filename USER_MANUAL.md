@@ -139,36 +139,57 @@ void loop() {
 #include <esp_now.h>
 #include <WiFi.h>
 
+#ifndef LED_BUILTIN
+// 若您的板子編譯時找不到 LED_BUILTIN，請手動將它改為對應的腳位（通常為 2）
+#define LED_BUILTIN 2 
+#endif
+
 typedef struct struct_message {
     int x;
     int y;
 } struct_message;
 
 struct_message myData;
+unsigned long lastRecvTime = 0; // 用於追蹤最後一次收到訊號的時間
 
 // ESP-NOW 接收回呼函數 (自動觸發)
 // 注意：以下寫法為 ESP32 Core 3.x 以上專用。
 void OnDataRecv(const esp_now_recv_info_t * esp_now_info, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
-  Serial.printf("X: %d, Y: %d\n", myData.x, myData.y);
+  
+  // 紀錄收到資料的時間
+  lastRecvTime = millis();
+  
+  // 點亮內建藍燈表示通訊中
+  digitalWrite(LED_BUILTIN, HIGH); 
+  
+  // 印出偏移座標讓您在 Serial Monitor 看到變化
+  Serial.printf("收到搖桿指令 -> X: %4d, Y: %4d\n", myData.x, myData.y);
+  
   // TODO: 在這裡或者在 Core 1 的 Task 裡面更新馬達 PWM
 }
 
 void setup() {
   Serial.begin(115200);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW); // 初始狀態熄滅
   
   // 必須設定為 STA 模式才能使用 ESP-NOW (但不連線)
   WiFi.mode(WIFI_STA);
 
   if (esp_now_init() == ESP_OK) {
     esp_now_register_recv_cb(OnDataRecv);
+    Serial.println("ESP-NOW 初始化成功，等待主板訊號...");
+  } else {
+    Serial.println("ESP-NOW 初始化失敗");
   }
-  
-  // (進階) 在這裡可以呼叫 xTaskCreatePinnedToCore 來啟動專屬的控制迴圈
 }
 
 void loop() {
-  // 保持淨空，不處理網路
+  // 如果超過 500 毫秒沒有收到任何主板訊號，視為斷線並熄滅 LED
+  if (millis() - lastRecvTime > 500 && lastRecvTime != 0) {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
 }
 ```
 
