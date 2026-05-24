@@ -106,6 +106,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 void setup() {
   Serial.begin(115200);
+  
+  // 明確設定為 AP+STA 雙模式，以確保 ESP-NOW 與 Wi-Fi 熱點能同時完美運作
+  WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(ssid, password);
   
   // 初始化 ESP-NOW 並註冊副板
@@ -113,6 +116,7 @@ void setup() {
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
     peerInfo.channel = 0;
     peerInfo.encrypt = false;
+    peerInfo.ifidx = WIFI_IF_AP; // 明確指定為 AP 介面，避免 3.x 版本崩潰
     esp_now_add_peer(&peerInfo);
   }
 
@@ -125,6 +129,8 @@ void setup() {
   server.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+  
+  Serial.println("主板初始化完成，Wi-Fi 伺服器已啟動！");
 }
 
 void loop() {
