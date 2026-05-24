@@ -39,8 +39,10 @@ void setup() {
   Serial.begin(115200);
   delay(2000); // 等待終端機準備好
   
-  // 必須設定為 STA 模式才能讀取到正確的 MAC Address
+  // 必須設定為 STA 模式並啟動，才能讀取到正確的 MAC Address
   WiFi.mode(WIFI_STA);
+  WiFi.begin(); // 確保 WiFi 晶片已喚醒
+  delay(100);
   
   Serial.println();
   Serial.print("請複製這串 MAC Address: ");
@@ -145,7 +147,8 @@ typedef struct struct_message {
 struct_message myData;
 
 // ESP-NOW 接收回呼函數 (自動觸發)
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+// 注意：以下寫法為 ESP32 Core 3.x 以上專用。
+void OnDataRecv(const esp_now_recv_info_t * esp_now_info, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
   Serial.printf("X: %d, Y: %d\n", myData.x, myData.y);
   // TODO: 在這裡或者在 Core 1 的 Task 裡面更新馬達 PWM
