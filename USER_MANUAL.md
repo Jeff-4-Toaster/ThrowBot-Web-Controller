@@ -28,7 +28,34 @@
 > [!IMPORTANT]
 > **緊急煞車機制**：當操作者放開搖桿的瞬間，網頁會**無視發送冷卻時間**，瞬間發送 `{"cmd":"move", "x":0, "y":0}`。
 
-## 3. 雙板 C++ 開發範例 (Arduino IDE)
+## 3. 如何取得副板的真實 MAC Address？
+ESP-NOW 必須要知道副板的 MAC Address 才能精準投遞控制訊號。
+請先將以下這段極短的程式碼，**燒錄到您的「副板」上**：
+
+```cpp
+#include <WiFi.h>
+
+void setup() {
+  Serial.begin(115200);
+  delay(2000); // 等待終端機準備好
+  
+  // 必須設定為 STA 模式才能讀取到正確的 MAC Address
+  WiFi.mode(WIFI_STA);
+  
+  Serial.println();
+  Serial.print("請複製這串 MAC Address: ");
+  Serial.println(WiFi.macAddress());
+}
+
+void loop() { }
+```
+**操作步驟：**
+1. 燒錄上述程式到副板。
+2. 打開 Arduino IDE 的 **序列埠監控視窗 (Serial Monitor)**，波特率設為 `115200`。
+3. 按下板子上的 `EN` 或 `RST` (重置) 按鈕。
+4. 您會看到類似 `24:6F:28:AE:9D:14` 的字串。請將它轉換成 `0x24, 0x6F, 0x28, 0xAE, 0x9D, 0x14` 格式，並填入下方主板程式碼的 `broadcastAddress` 中。
+
+## 4. 雙板 C++ 開發範例 (Arduino IDE)
 
 ### 【共用結構】
 兩塊板子都必須宣告這個相同的資料結構：
@@ -142,7 +169,7 @@ void loop() {
 }
 ```
 
-## 4. 如何將網頁燒錄進 ESP32？
+## 5. 如何將網頁燒錄進 ESP32？
 1. 請在您的電腦上執行 Python 腳本：`python pack_to_header.py`。
 2. 它會自動下載離線版的 `nipplejs.min.js`，並將所有網頁檔案轉碼成一個 `WebUI.h` 的 C++ 檔案。
 3. 將這個 `WebUI.h` 放到您的 Arduino 專案資料夾裡面。
