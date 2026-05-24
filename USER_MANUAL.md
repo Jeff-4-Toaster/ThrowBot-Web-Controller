@@ -107,14 +107,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void setup() {
   Serial.begin(115200);
   
-  // 明確設定為 AP+STA 雙模式，以確保 ESP-NOW 與 Wi-Fi 熱點能同時完美運作
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(ssid, password);
+  // 1. 純粹使用 AP 模式，避免 STA 在背景不斷掃描頻道而導致手機連線失敗
+  WiFi.mode(WIFI_AP);
+  // 2. 強制將熱點固定在 Channel 1
+  WiFi.softAP(ssid, password, 1);
   
   // 初始化 ESP-NOW 並註冊副板
   if (esp_now_init() == ESP_OK) {
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-    peerInfo.channel = 0;
+    peerInfo.channel = 1; // 必須與 softAP 頻道 (Channel 1) 一致
     peerInfo.encrypt = false;
     peerInfo.ifidx = WIFI_IF_AP; // 明確指定為 AP 介面，避免 3.x 版本崩潰
     esp_now_add_peer(&peerInfo);
@@ -144,6 +145,7 @@ void loop() {
 ```cpp
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h> // 需要引入此標頭檔來強制鎖定頻道
 
 #ifndef LED_BUILTIN
 // 若您的板子編譯時找不到 LED_BUILTIN，請手動將它改為對應的腳位（通常為 2）
@@ -182,6 +184,8 @@ void setup() {
   
   // 必須設定為 STA 模式才能使用 ESP-NOW (但不連線)
   WiFi.mode(WIFI_STA);
+  WiFi.disconnect(); // 確保沒有在背景連線
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE); // 強制鎖定在 Channel 1 與主板同步
 
   if (esp_now_init() == ESP_OK) {
     esp_now_register_recv_cb(OnDataRecv);
