@@ -91,6 +91,11 @@ esp_now_peer_info_t peerInfo;
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
+// 顯式設定固定的 IP 網段，加速 DHCP 握手並防止手機連線失敗
+IPAddress local_IP(192, 168, 4, 1);
+IPAddress gateway(192, 168, 4, 1);
+IPAddress subnet(255, 255, 255, 0);
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   if (type == WStype_TEXT) {
     StaticJsonDocument<200> doc;
@@ -106,13 +111,24 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 void setup() {
   Serial.begin(115200);
+  delay(1000); // 讓序列埠輸出穩定
   
-  // 1. 純粹使用 AP 模式，避免 STA 在背景不斷掃描頻道而導致手機連線失敗
-  WiFi.mode(WIFI_AP);
-  // 2. 強制將熱點固定在 Channel 1
-  WiFi.softAP(ssid, password, 1);
+  // 1. 改用 AP_STA 模式，載入完整的雙界面狀態機，避免單獨 AP 模式與 ESP-NOW 衝突
+  WiFi.mode(WIFI_AP_STA);
   
-  // 初始化 ESP-NOW 並註冊副板
+  // 2. 顯式設定網段，保證手機連線時能穩定且快速獲得 IP 派發
+  WiFi.softAPConfig(local_IP, gateway, subnet);
+  
+  // 3. 強制將熱點固定在 Channel 1
+  if (WiFi.softAP(ssid, password, 1)) {
+    Serial.println("Wi-Fi 熱點 (SoftAP) 啟動成功！");
+    Serial.print("熱點 IP 位置: ");
+    Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("Wi-Fi 熱點啟動失敗！");
+  }
+  
+  // 4. 初始化 ESP-NOW 並註冊副板
   if (esp_now_init() == ESP_OK) {
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
     peerInfo.channel = 1; // 必須與 softAP 頻道 (Channel 1) 一致
@@ -137,6 +153,9 @@ void setup() {
 void loop() {
   server.handleClient();
   webSocket.loop();
+  
+  // 給系統留有 1 毫秒處理背景 Wi-Fi 任務與握手，防止 CPU 被完全霸佔而導致連線不穩
+  delay(1);
 }
 ```
 
